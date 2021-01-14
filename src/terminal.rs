@@ -2,6 +2,7 @@ use std::io::{self, Write};
 use termion::event::Key;
 use termion::input::TermRead;
 use termion::raw::{IntoRawMode, RawTerminal};
+use termion::{clear, color, cursor, style};
 
 use crate::Position;
 
@@ -21,7 +22,8 @@ impl Terminal {
         Ok(Self {
             size: Size {
                 width: size.0,
-                height: size.1,
+                // Remove 2 lines for status bar
+                height: size.1.saturating_sub(2),
             },
             // Keep reference to it so it doesn't get removed
             // (to keep terminal in raw mode)
@@ -34,11 +36,11 @@ impl Terminal {
     }
 
     pub fn clear_screen() {
-        print!("{}", termion::clear::All);
+        print!("{}", clear::All);
     }
 
     pub fn clear_current_line() {
-        print!("{}", termion::clear::CurrentLine);
+        print!("{}", clear::CurrentLine);
     }
 
     #[allow(clippy::cast_possible_truncation)]
@@ -48,15 +50,36 @@ impl Terminal {
         y = y.saturating_add(1);
         let x = x as u16;
         let y = y as u16;
-        print!("{}", termion::cursor::Goto(x, y));
+        print!("{}", cursor::Goto(x, y));
     }
 
     pub fn cursor_hide() {
-        print!("{}", termion::cursor::Hide);
+        print!("{}", cursor::Hide);
     }
 
     pub fn cursor_show() {
-        print!("{}", termion::cursor::Show);
+        print!("{}", cursor::Show);
+    }
+
+    pub fn set_fg_color(color: color::Rgb) {
+        print!("{}", color::Fg(color));
+    }
+    pub fn reset_fg_color() {
+        print!("{}", color::Fg(color::Reset));
+    }
+
+    pub fn invert_color() {
+        print!("{}", style::Invert);
+    }
+    pub fn reset_invert_color() {
+        print!("{}", style::NoInvert);
+    }
+
+    pub fn set_bg_color(color: color::Rgb) {
+        print!("{}", color::Bg(color));
+    }
+    pub fn reset_bg_color() {
+        print!("{}", color::Bg(color::Reset));
     }
 
     pub fn flush() -> Result<(), std::io::Error> {

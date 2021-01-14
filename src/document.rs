@@ -4,18 +4,22 @@ use std::fs;
 #[derive(Default)]
 pub struct Document {
     rows: Vec<Row>,
+    pub file_name: Option<String>,
 }
 
 impl Document {
-    pub fn open(filename: &str) -> Result<Self, std::io::Error> {
-        let content = fs::read_to_string(filename)?;
+    pub fn open(file_name: &str) -> Result<Self, std::io::Error> {
+        let content = fs::read_to_string(file_name)?;
 
         let mut rows: Vec<Row> = Vec::new();
         for value in content.lines() {
             rows.push(Row::from(value));
         }
 
-        Ok(Self { rows })
+        Ok(Self {
+            rows,
+            file_name: Some(file_name.to_string()),
+        })
     }
 
     pub fn row(&self, index: usize) -> Option<&Row> {
