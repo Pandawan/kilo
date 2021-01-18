@@ -2,6 +2,7 @@ use crate::Document;
 use crate::Row;
 use crate::Terminal;
 use std::env;
+use std::time::{Duration, Instant};
 use termion::event::Key;
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -12,21 +13,43 @@ pub struct Position {
     pub y: usize,
 }
 
+struct StatusMessage {
+    text: String,
+    time: Instant,
+}
+impl StatusMessage {
+    fn from(message: String) -> Self {
+        Self {
+            text: message,
+            time: Instant::now(),
+        }
+    }
+}
+
 pub struct Editor {
     should_quit: bool,
     terminal: Terminal,
     cursor_position: Position,
     offset: Position,
     document: Document,
+    status_message: StatusMessage,
 }
 
 impl Editor {
     pub fn default() -> Self {
         let args: Vec<String> = env::args().collect();
 
+        let mut initial_status = String::from("HELP: Ctrl-Q to quit");
+
         let document = if args.len() > 1 {
             let file_name = &args[1];
-            Document::open(&file_name).unwrap_or_default()
+            let doc = Document::open(&file_name);
+            if doc.is_ok() {
+                doc.unwrap()
+            } else {
+                initial_status = format!("ERR: Could not open file: {}", file_name);
+                Document::default()
+            }
         } else {
             Document::default()
         };
@@ -37,6 +60,7 @@ impl Editor {
             cursor_position: Position::default(),
             offset: Position::default(),
             document,
+            status_message: StatusMessage::from(initial_status),
         }
     }
 
@@ -245,6 +269,12 @@ impl Editor {
     }
     fn draw_message_bar(&self) {
         Terminal::clear_current_line();
+        let message = &self.status_message;
+        if Instant::now() - message.time < Duration::new(5, 0) {
+            let mut text = message.text.clone();
+            text.truncate(self.terminal.size().width as usize);
+            print!("{}", text);
+        }
     }
 }
 
